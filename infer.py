@@ -5,6 +5,24 @@ import torch
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 import mmcv
 import pycocotools.mask as maskUtils
+import matplotlib.pyplot as plt
+import cv2
+
+def show_anns(anns):
+    if len(anns) == 0:
+        return
+    sorted_anns = sorted(anns, key=(lambda x: x['area']), reverse=True)
+    ax = plt.gca()
+    ax.set_autoscale_on(False)
+
+    img = np.ones((sorted_anns[0]['segmentation'].shape[0], sorted_anns[0]['segmentation'].shape[1], 4))
+    img[:,:,3] = 0
+    for ann in sorted_anns:
+        m = ann['segmentation']
+        color_mask = np.concatenate([np.random.random(3), [0.35]])
+        img[m] = color_mask
+    ax.imshow(img)
+
 
 
 id2label={
@@ -25,6 +43,13 @@ def semantic_segment_anything_inference(
     
     img = mmcv.imread(img_path)
     anns = {'annotations': mask_branch_model.generate(img)}
+    # image = cv.imread('images/dog.jpg')
+    # image = cv.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # plt.figure(figsize=(20,20))
+    # plt.imshow(img)
+    # show_anns(masks)
+    # plt.axis('off')
+    # plt.show() 
     model = init_model(config_file, checkpoint_file, device='cuda:0')
     result = inference_model(model, img)
     class_ids = result.pred_sem_seg.data.squeeze()
@@ -95,14 +120,14 @@ def semantic_segment_anything_inference(
 config_file = 'configs/segformer/segformer_mit-b5_8xb1-160k_corn-1024x1024.py'
 checkpoint_file = 'work_dirs/segformer_mit-b5_8xb1-160k_corn-1024x1024/iter_40000.pth'
 sam_check_point = 'vit_segment_anything/vit_h.pth'
-img_path='12.png'
+img_path='test_data/test/tif1.png'
 target_path='test.png'
 
 
 sam = sam_model_registry["vit_h"](checkpoint=sam_check_point).to(0)
 mask_branch_model = SamAutomaticMaskGenerator(
     model=sam,
-    points_per_side=128,
+    points_per_side=16,
     # Foggy driving (zero-shot evaluate) is more challenging than other dataset, so we use a larger points_per_side
     pred_iou_thresh=0.86,
     stability_score_thresh=0.92,
