@@ -4,7 +4,7 @@ dataset_type = 'Mydata'
 data_root = 'data/corn/'
 classes = ('bg', 'corn')
 metainfo=dict(classes=classes)
-crop_size = (512, 512)
+crop_size = (512, 1024)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
@@ -18,6 +18,7 @@ train_pipeline = [
     dict(type='PhotoMetricDistortion'),
     dict(type='PackSegInputs')
 ]
+
 train_dataset = dict(
     type=dataset_type,
     data_root=data_root,

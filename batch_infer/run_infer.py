@@ -19,14 +19,14 @@ def parse_args():
 
     # params of evaluate
     parser.add_argument(
-        "--config", dest="config", help="The config file.", default='configs/segformer/segformer_mit-b5_8xb1-160k_corn-1024x1024.py', type=str)
+        "--config", dest="config", help="The config file.", default='configs/segformer/segformer_mit-b5_8xb1-160k_wheat-1024x1024.py', type=str)
 
     parser.add_argument(
         '--checkpoint_file',
         dest='checkpoint_file',
         help='The path of model for evaluation.',
         type=str,
-        default='work_dirs/segformer_mit-b5_8xb1-160k_corn-1024x1024/iter_40000.pth')
+        default='work_dirs/segformer_mit-b5_8xb1-160k_wheat-1024x1024/iter_40000.pth')
     
     parser.add_argument(
         '--num_workers',
@@ -49,7 +49,7 @@ def parse_args():
         nargs=2,
         help='The size of sliding window, the first is width and the second is height.',
         type=int,
-        default=[1400, 840])
+        default=[1600, 900])
     
     parser.add_argument(
         '--overlap',
@@ -71,7 +71,7 @@ def parse_args():
         dest='image_list',
         help='The names of images for evaluation.',
         type=str,
-        default=None)
+        default='img_list.txt')
     
     parser.add_argument(
         '--save_dir',
@@ -90,7 +90,7 @@ def parse_args():
         '--combine_method',
         help='method to save combine mask, average_logit or voting_mask, only voting supported now',
         type=str,
-        default='average_logit')    
+        default='voting')    
     return parser.parse_args()
 
 def load_semantic_model(config_file, checkpoint_file):
@@ -134,7 +134,7 @@ def remove_maoci(mask, kernel=9, iterations=2):
 
     return opening
 
-def thin(mask, kernel=7, iterations=1):
+def thin(mask, kernel=5, iterations=1):
     kernel = np.ones((kernel, kernel), dtype=np.uint8)
     erosion = cv2.erode(mask, kernel, iterations=iterations)
     return erosion
@@ -222,9 +222,9 @@ def combine_logit(semantic_model, segment_everything, loader,  combine_tool, sav
             combine_tool.combine_logit(data)
         
         combine_mask = combine_tool.get_mask_bylogit()
-        # a = Image.fromarray(combine_mask*255)
-        # a.save('large_ori.png')
-        # fine_mask = np.zeros_like(combine_mask).astype(np.uint8)
+        a = Image.fromarray(combine_mask*255)
+        a.save('large_ori.png')
+        fine_mask = np.zeros_like(combine_mask).astype(np.uint8)
         for iter, data in enumerate(loader):
             start_h, start_w = data['start_loc'] 
             valid_height, valid_width = data['valid']
@@ -234,8 +234,8 @@ def combine_logit(semantic_model, segment_everything, loader,  combine_tool, sav
             combine_tool.combine_mask(data)
     
         fine_mask = combine_tool.get_mask_bymask()*255
-        # a = Image.fromarray(fine_mask)
-        # a.save('large_fine.png')
+        a = Image.fromarray(fine_mask)
+        a.save('large_fine.png')
         save_img(fine_mask, save_path, in_ds = eval_dataset.large_data.data_info.get('GeoTransform_And_Projection', None))
 
 
